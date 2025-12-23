@@ -15,11 +15,13 @@ export function usePlayer(): Player | null {
     return null;
   }
 
+  // TypeScript type narrowing: socket is non-null after the check
+  const socketId = socket.id;
+
   // Convert players Map/Record to array and find player by socketId
   const players = room.players instanceof Map
     ? Array.from(room.players.values())
     : Object.values(room.players);
 
-  // socket is guaranteed to be non-null after the check above
-  return players.find((p) => p.socketId === socket!.id) || null;
+  return players.find((p) => p.socketId === socketId) || null;
 }

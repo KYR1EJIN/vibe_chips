@@ -14,6 +14,7 @@ export function useOwner(): boolean {
     return false;
   }
 
-  // socket is guaranteed to be non-null after the check above
-  return room.ownerId === socket!.id;
+  // TypeScript type narrowing: socket is non-null after the check
+  const socketId = socket.id;
+  return room.ownerId === socketId;
 }
