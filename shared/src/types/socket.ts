@@ -30,6 +30,10 @@ export interface LeaveSeatPayload {
   // No payload needed, playerId from socket connection
 }
 
+export interface RequestSeatChangePayload {
+  newSeatNumber: number; // Target seat number
+}
+
 export interface OwnerUpdateConfigPayload {
   smallBlind?: number;
   bigBlind?: number;
@@ -94,5 +98,17 @@ export interface HandStartedPayload {
   dealerButtonSeat: number;
   smallBlindSeat: number;
   bigBlindSeat: number;
+}
+
+export interface SeatChangeRequestPayload {
+  playerId: PlayerId;
+  currentSeatNumber: number;
+  newSeatNumber: number;
+  username: string;
+}
+
+export interface OwnerApproveSeatChangePayload {
+  playerId: PlayerId;
+  newSeatNumber: number;
 }
 

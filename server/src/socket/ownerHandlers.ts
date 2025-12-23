@@ -10,6 +10,7 @@ import {
   socketSchemas,
   OwnerUpdateConfigPayload,
   OwnerStartHandPayload,
+  OwnerApproveSeatChangePayload,
   ActionAckPayload,
   ErrorPayload,
   HandStartedPayload,
@@ -261,15 +262,81 @@ export function setupOwnerHandlers(socket: Socket, io: Server): void {
       const firstPlayer = seatedPlayers[0];
       const dealerButtonSeat = firstPlayer.seatNumber;
       
-      // Calculate small blind and big blind seats (left of dealer, left of small blind)
+      // Helper to get next seat (wraps around)
       const getNextSeat = (seat: number): number => {
         return seat === room.config.maxSeats ? 1 : seat + 1;
       };
-      const smallBlindSeat = getNextSeat(dealerButtonSeat);
-      const bigBlindSeat = getNextSeat(smallBlindSeat);
       
-      // First action seat is left of big blind
-      const firstActionSeat = getNextSeat(bigBlindSeat);
+      // Helper to find next occupied seat
+      const getNextOccupiedSeat = (startSeat: number): number | null => {
+        let currentSeat = startSeat;
+        for (let i = 0; i < room.config.maxSeats; i++) {
+          currentSeat = getNextSeat(currentSeat);
+          const seat = room.getSeat(currentSeat);
+          if (seat && seat.isOccupied && seat.playerId) {
+            return currentSeat;
+          }
+        }
+        return null;
+      };
+      
+      // Find small blind seat (next occupied seat after dealer)
+      const smallBlindSeat = getNextOccupiedSeat(dealerButtonSeat);
+      if (!smallBlindSeat) {
+        const errorPayload: ErrorPayload = {
+          code: 'INSUFFICIENT_PLAYERS',
+          message: 'Not enough players for blinds',
+          eventType: 'owner_start_hand',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+      
+      // Find big blind seat (next occupied seat after small blind)
+      const bigBlindSeat = getNextOccupiedSeat(smallBlindSeat);
+      if (!bigBlindSeat) {
+        const errorPayload: ErrorPayload = {
+          code: 'INSUFFICIENT_PLAYERS',
+          message: 'Not enough players for blinds',
+          eventType: 'owner_start_hand',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+      
+      // First action seat is next occupied seat after big blind
+      const firstActionSeat = getNextOccupiedSeat(bigBlindSeat);
+      if (!firstActionSeat) {
+        // If no action seat found, all players are blinds (shouldn't happen with 2+ players)
+        const errorPayload: ErrorPayload = {
+          code: 'INSUFFICIENT_PLAYERS',
+          message: 'Not enough players to start hand',
+          eventType: 'owner_start_hand',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
 
       // Set all seated players to active status and reset currentBet
       for (const player of seatedPlayers) {
@@ -340,6 +407,168 @@ export function setupOwnerHandlers(socket: Socket, io: Server): void {
         code: 'VALIDATION_ERROR',
         message: error.message || 'Invalid request',
         eventType: 'owner_start_hand',
+      };
+      socket.emit('error', errorPayload);
+      socket.emit('action_ack', {
+        success: false,
+        error: {
+          code: errorPayload.code,
+          message: errorPayload.message,
+        },
+      });
+    }
+  });
+
+  /**
+   * owner_approve_seat_change: Owner approves a seat change request
+   */
+  socket.on('owner_approve_seat_change', (payload: OwnerApproveSeatChangePayload) => {
+    try {
+      // Validate payload
+      socketSchemas.owner_approve_seat_change.parse(payload);
+
+      // Get connection info
+      const connection = stateManager.getConnection(socket.id);
+      if (!connection || !connection.roomId) {
+        const errorPayload: ErrorPayload = {
+          code: 'NOT_IN_ROOM',
+          message: 'You must join a room first',
+          eventType: 'owner_approve_seat_change',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      const room = stateManager.getRoom(connection.roomId);
+      if (!room) {
+        const errorPayload: ErrorPayload = {
+          code: 'ROOM_NOT_FOUND',
+          message: 'Room not found',
+          eventType: 'owner_approve_seat_change',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      // Check if user is owner
+      if (room.ownerId !== socket.id) {
+        const errorPayload: ErrorPayload = {
+          code: 'OWNER_ONLY',
+          message: 'Only the room owner can approve seat changes',
+          eventType: 'owner_approve_seat_change',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      const { playerId, newSeatNumber } = payload;
+
+      // Find player
+      const player = room.getPlayer(playerId);
+      if (!player) {
+        const errorPayload: ErrorPayload = {
+          code: 'PLAYER_NOT_FOUND',
+          message: 'Player not found',
+          eventType: 'owner_approve_seat_change',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      // Validate new seat
+      const newSeat = room.getSeat(newSeatNumber);
+      if (!newSeat) {
+        const errorPayload: ErrorPayload = {
+          code: 'INVALID_SEAT',
+          message: `Seat ${newSeatNumber} does not exist`,
+          eventType: 'owner_approve_seat_change',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      if (newSeat.isOccupied) {
+        const errorPayload: ErrorPayload = {
+          code: 'SEAT_OCCUPIED',
+          message: `Seat ${newSeatNumber} is already occupied`,
+          eventType: 'owner_approve_seat_change',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      // Free old seat
+      const oldSeat = room.getSeat(player.seatNumber);
+      if (oldSeat) {
+        oldSeat.isOccupied = false;
+        oldSeat.playerId = null;
+      }
+
+      // Move player to new seat
+      player.seatNumber = newSeatNumber;
+      newSeat.isOccupied = true;
+      newSeat.playerId = player.playerId;
+
+      // Send success ack
+      const ack: ActionAckPayload = {
+        success: true,
+        eventId: `evt_${Date.now()}`,
+      };
+      socket.emit('action_ack', ack);
+
+      // Broadcast room state to all clients
+      broadcastRoomState(io, connection.roomId, room);
+
+      console.log(
+        `✅ Owner approved seat change: Player ${player.username} (${player.playerId}) moved from seat ${oldSeat?.seatNumber} to ${newSeatNumber}`
+      );
+    } catch (error: any) {
+      const errorPayload: ErrorPayload = {
+        code: 'VALIDATION_ERROR',
+        message: error.message || 'Invalid request',
+        eventType: 'owner_approve_seat_change',
       };
       socket.emit('error', errorPayload);
       socket.emit('action_ack', {

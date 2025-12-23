@@ -59,11 +59,30 @@ export const playerActionSchema = z.object({
   amount: z.number().int().nonnegative().optional(),
 });
 
+export const requestSeatChangeSchema = z.object({
+  newSeatNumber: z
+    .number()
+    .int('Seat number must be an integer')
+    .min(1, 'Seat number must be at least 1')
+    .max(MAX_SEATS, `Seat number must be at most ${MAX_SEATS}`),
+});
+
+export const ownerApproveSeatChangeSchema = z.object({
+  playerId: z.string().min(1, 'Player ID is required'),
+  newSeatNumber: z
+    .number()
+    .int('Seat number must be an integer')
+    .min(1, 'Seat number must be at least 1')
+    .max(MAX_SEATS, `Seat number must be at most ${MAX_SEATS}`),
+});
+
 export const socketSchemas = {
   create_room: createRoomSchema,
   join_room: joinRoomSchema,
   take_seat: takeSeatSchema,
   leave_seat: leaveSeatSchema,
+  request_seat_change: requestSeatChangeSchema,
+  owner_approve_seat_change: ownerApproveSeatChangeSchema,
   owner_update_config: ownerUpdateConfigSchema,
   owner_start_hand: ownerStartHandSchema,
   player_action: playerActionSchema,

@@ -16,11 +16,13 @@ import {
   socketSchemas,
   TakeSeatPayload,
   LeaveSeatPayload,
+  RequestSeatChangePayload,
   PlayerActionPayload,
   ActionAckPayload,
   ErrorPayload,
   PlayerJoinedPayload,
   PlayerLeftPayload,
+  SeatChangeRequestPayload,
 } from '@vibe-chips/shared';
 import { broadcastRoomState } from './roomHandlers';
 
@@ -76,12 +78,12 @@ export function setupPlayerHandlers(socket: Socket, io: Server): void {
         return;
       }
 
-      // Check if player is already seated
+      // Check if player is already seated - if so, they need to request seat change
       const existingPlayer = room.getPlayerBySocketId(socket.id);
       if (existingPlayer) {
         const errorPayload: ErrorPayload = {
           code: 'ALREADY_SEATED',
-          message: 'You are already seated',
+          message: 'You are already seated. Use seat change request to move to another seat.',
           eventType: 'take_seat',
         };
         socket.emit('error', errorPayload);
@@ -325,6 +327,165 @@ export function setupPlayerHandlers(socket: Socket, io: Server): void {
         code: 'VALIDATION_ERROR',
         message: error.message || 'Invalid request',
         eventType: 'leave_seat',
+      };
+      socket.emit('error', errorPayload);
+      socket.emit('action_ack', {
+        success: false,
+        error: {
+          code: errorPayload.code,
+          message: errorPayload.message,
+        },
+      });
+    }
+  });
+
+  /**
+   * request_seat_change: Player requests to change seats
+   * Sends request to room owner for approval
+   */
+  socket.on('request_seat_change', (payload: RequestSeatChangePayload) => {
+    try {
+      // Validate payload
+      socketSchemas.request_seat_change.parse(payload);
+
+      const { newSeatNumber } = payload;
+
+      // Get connection info
+      const connection = stateManager.getConnection(socket.id);
+      if (!connection || !connection.roomId) {
+        const errorPayload: ErrorPayload = {
+          code: 'NOT_IN_ROOM',
+          message: 'You must join a room first',
+          eventType: 'request_seat_change',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      const room = stateManager.getRoom(connection.roomId);
+      if (!room) {
+        const errorPayload: ErrorPayload = {
+          code: 'ROOM_NOT_FOUND',
+          message: 'Room not found',
+          eventType: 'request_seat_change',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      // Find player by socket ID
+      const player = room.getPlayerBySocketId(socket.id);
+      if (!player) {
+        const errorPayload: ErrorPayload = {
+          code: 'NOT_SEATED',
+          message: 'You must be seated to request a seat change',
+          eventType: 'request_seat_change',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      // Validate new seat
+      const newSeat = room.getSeat(newSeatNumber);
+      if (!newSeat) {
+        const errorPayload: ErrorPayload = {
+          code: 'INVALID_SEAT',
+          message: `Seat ${newSeatNumber} does not exist`,
+          eventType: 'request_seat_change',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      if (newSeat.isOccupied) {
+        const errorPayload: ErrorPayload = {
+          code: 'SEAT_OCCUPIED',
+          message: `Seat ${newSeatNumber} is already occupied`,
+          eventType: 'request_seat_change',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      if (newSeatNumber === player.seatNumber) {
+        const errorPayload: ErrorPayload = {
+          code: 'SAME_SEAT',
+          message: 'You are already in that seat',
+          eventType: 'request_seat_change',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      // Send seat change request to owner
+      const ownerSocketId = room.ownerId;
+      const requestPayload: SeatChangeRequestPayload = {
+        playerId: player.playerId,
+        currentSeatNumber: player.seatNumber,
+        newSeatNumber,
+        username: player.username,
+      };
+
+      // Emit to owner
+      io.to(ownerSocketId).emit('seat_change_request', requestPayload);
+
+      // Send success ack to requesting player
+      const ack: ActionAckPayload = {
+        success: true,
+        eventId: `evt_${Date.now()}`,
+      };
+      socket.emit('action_ack', ack);
+
+      console.log(
+        `✅ Seat change request from ${player.username} (${player.playerId}): seat ${player.seatNumber} → ${newSeatNumber}`
+      );
+    } catch (error: any) {
+      const errorPayload: ErrorPayload = {
+        code: 'VALIDATION_ERROR',
+        message: error.message || 'Invalid request',
+        eventType: 'request_seat_change',
       };
       socket.emit('error', errorPayload);
       socket.emit('action_ack', {

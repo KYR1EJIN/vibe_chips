@@ -10,8 +10,10 @@ import { useOwner } from '../hooks/useOwner';
 import { usePlayer } from '../hooks/usePlayer';
 import { SeatComponent } from '../components/table/Seat';
 import { SeatModal } from '../components/modals/SeatModal';
+import { SeatChangeModal } from '../components/modals/SeatChangeModal';
 import { RoomLink } from '../components/room/RoomLink';
 import { RoomConfig } from '../components/room/RoomConfig';
+import { SeatChangeRequests } from '../components/owner/SeatChangeRequests';
 import { HandStatus } from '../components/betting/HandStatus';
 import { BettingControls } from '../components/betting/BettingControls';
 import { BettingInfo } from '../components/betting/BettingInfo';
@@ -28,6 +30,7 @@ function RoomPage({ roomId, onBack }: RoomPageProps) {
   const isOwner = useOwner();
   const currentPlayer = usePlayer();
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
+  const [seatChangeTarget, setSeatChangeTarget] = useState<number | null>(null);
   
   // If we have a roomId but no room state yet, request it
   useEffect(() => {
@@ -51,8 +54,18 @@ function RoomPage({ roomId, onBack }: RoomPageProps) {
 
   const handleSeatClick = (seatNumber: number) => {
     const seat = room.seats.find((s) => s.seatNumber === seatNumber);
-    if (seat && !seat.isOccupied) {
+    if (!seat) return;
+    
+    // If seat is empty and player is not seated, show seat modal
+    if (!seat.isOccupied && !currentPlayer) {
       setSelectedSeat(seatNumber);
+      return;
+    }
+    
+    // If seat is empty and player is already seated, show seat change confirmation
+    if (!seat.isOccupied && currentPlayer) {
+      setSeatChangeTarget(seatNumber);
+      return;
     }
   };
 
@@ -69,6 +82,12 @@ function RoomPage({ roomId, onBack }: RoomPageProps) {
   const handleLeaveSeat = () => {
     if (!socket || !currentPlayer) return;
     socket.emit('leave_seat', {});
+  };
+
+  const handleConfirmSeatChange = () => {
+    if (!socket || !currentPlayer || !seatChangeTarget) return;
+    socket.emit('request_seat_change', { newSeatNumber: seatChangeTarget });
+    setSeatChangeTarget(null);
   };
 
   const handleStartHand = () => {
@@ -146,6 +165,7 @@ function RoomPage({ roomId, onBack }: RoomPageProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <RoomLink roomId={room.roomId} />
             <RoomConfig />
+            <SeatChangeRequests />
             {!room.currentHand && (
               <div className="md:col-span-2">
                 <button
@@ -237,6 +257,17 @@ function RoomPage({ roomId, onBack }: RoomPageProps) {
         onClose={() => setSelectedSeat(null)}
         onSubmit={handleTakeSeat}
       />
+
+      {/* Seat Change Confirmation Modal */}
+      {currentPlayer && (
+        <SeatChangeModal
+          currentSeat={currentPlayer.seatNumber}
+          newSeat={seatChangeTarget || 0}
+          isOpen={seatChangeTarget !== null}
+          onClose={() => setSeatChangeTarget(null)}
+          onConfirm={handleConfirmSeatChange}
+        />
+      )}
     </div>
   );
 }
