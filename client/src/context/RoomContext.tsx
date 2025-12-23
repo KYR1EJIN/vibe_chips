@@ -1,10 +1,18 @@
 /**
  * Current room state context
- * Placeholder - will be implemented in Phase 1+
+ * Phase 1: Room state management
  */
 
-import { createContext } from 'react';
+import { createContext, useContext } from 'react';
+import { RoomState } from '@vibe-chips/shared';
 
-// Placeholder - will be fully implemented in Phase 1+
-export const RoomContext = createContext(null);
+export const RoomContext = createContext<RoomState | null>(null);
+
+export function useRoomContext(): RoomState {
+  const room = useContext(RoomContext);
+  if (!room) {
+    throw new Error('useRoomContext must be used within RoomProvider');
+  }
+  return room;
+}
 

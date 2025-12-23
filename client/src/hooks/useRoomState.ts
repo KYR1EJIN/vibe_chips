@@ -1,11 +1,27 @@
 /**
  * Room state subscription hook
- * Placeholder - will be implemented in Phase 1+
+ * Phase 1: Subscribe to room_state events
  */
 
-// Placeholder - will be fully implemented in Phase 1+
-export function useRoomState() {
-  // Hook implementation will be added in Phase 1+
-  return null;
-}
+import { useState, useEffect } from 'react';
+import { RoomState } from '@vibe-chips/shared';
+import { useSocket } from './useSocket';
 
+export function useRoomState(): RoomState | null {
+  const socket = useSocket();
+  const [roomState, setRoomState] = useState<RoomState | null>(null);
+
+  useEffect(() => {
+    const handleRoomState = (payload: { room: RoomState }) => {
+      setRoomState(payload.room);
+    };
+
+    socket.on('room_state', handleRoomState);
+
+    return () => {
+      socket.off('room_state', handleRoomState);
+    };
+  }, [socket]);
+
+  return roomState;
+}

@@ -1,11 +1,11 @@
 /**
  * Socket.io connection hook
- * Placeholder - will be implemented in Phase 1+
+ * Phase 1: Socket connection management
  */
 
-// Placeholder - will be fully implemented in Phase 1+
+import { useSocketContext } from '../context/SocketContext';
+
 export function useSocket() {
-  // Hook implementation will be added in Phase 1+
-  return null;
+  return useSocketContext();
 }
 

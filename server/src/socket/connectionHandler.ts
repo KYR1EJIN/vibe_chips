@@ -1,14 +1,17 @@
 /**
  * Connection lifecycle handler
- * Phase 0: Logs connect/disconnect events only
- * No room logic, no game state, no action handlers
+ * Phase 1: Connection tracking and cleanup
  */
 
 import { Socket, Server } from 'socket.io';
+import { stateManager } from '../game/state/stateManager';
+import { setupRoomHandlers } from './roomHandlers';
+import { setupPlayerHandlers } from './playerHandlers';
+import { setupOwnerHandlers } from './ownerHandlers';
 
 /**
  * Handles socket connection lifecycle
- * Phase 0: Only logs connection events
+ * Phase 1: Connection tracking, room handlers, player handlers, owner handlers
  */
 export function connectionHandler(socket: Socket, io: Server): void {
   console.log(`✅ Client connected: ${socket.id}`);
@@ -18,14 +21,32 @@ export function connectionHandler(socket: Socket, io: Server): void {
     socketId: socket.id,
   });
 
+  // Setup event handlers
+  setupRoomHandlers(socket, io);
+  setupPlayerHandlers(socket, io);
+  setupOwnerHandlers(socket, io);
+
   // Handle disconnect
   socket.on('disconnect', (reason) => {
     console.log(`❌ Client disconnected: ${socket.id}, reason: ${reason}`);
-  });
 
-  // Phase 0: No other handlers
-  // Room handlers will be added in Phase 1
-  // Player handlers will be added in Phase 2
-  // Owner handlers will be added in Phase 4
+    // Get connection info
+    const connection = stateManager.getConnection(socket.id);
+    if (connection) {
+      const room = stateManager.getRoom(connection.roomId);
+      if (room && connection.playerId) {
+        // Mark player as disconnected
+        const player = room.getPlayer(connection.playerId);
+        if (player) {
+          player.markDisconnected();
+          // Phase 1: Don't remove player on disconnect
+          // Phase 5+: May preserve state if chips in play
+        }
+      }
+
+      // Remove connection tracking
+      stateManager.removeConnection(socket.id);
+    }
+  });
 }
 

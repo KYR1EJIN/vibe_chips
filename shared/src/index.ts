@@ -12,18 +12,10 @@ export * from './types/pot';
 export * from './types/action';
 export * from './types/socket';
 
-// Schemas (will be added in Phase 1+)
-// export * from './schemas/roomSchemas';
-// export * from './schemas/playerSchemas';
-// export * from './schemas/actionSchemas';
-// export * from './schemas/socketSchemas';
+// Schemas
+export * from './schemas/roomSchemas';
+export * from './schemas/socketSchemas';
 
-// Constants (will be added in Phase 1+)
-// export * from './constants/gameConstants';
-// export * from './constants/tableConstants';
-// export * from './constants/actionConstants';
-
-// Utils (will be added in Phase 1+)
-// export * from './utils/formatting';
-// export * from './utils/validation';
+// Constants
+export * from './constants/tableConstants';
 

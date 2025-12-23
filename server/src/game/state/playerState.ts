@@ -1,10 +1,81 @@
 /**
  * Player state class/model
- * Placeholder - will be implemented in Phase 1+
+ * Phase 1: Basic player state for seating
  */
 
-// Placeholder - will be fully implemented in Phase 1+
-export class PlayerState {
-  // Player state implementation will be added in Phase 1+
+import { Player, PlayerId, PlayerStatus } from '@vibe-chips/shared';
+
+/**
+ * PlayerState class
+ * Manages player state and enforces invariants
+ * Phase 1: Basic player state for seating
+ */
+export class PlayerState implements Player {
+  public readonly playerId: PlayerId;
+  public socketId: string;
+  public readonly username: string;
+  public seatNumber: number;
+  public stack: number;
+  public status: PlayerStatus;
+  public isConnected: boolean;
+  public readonly joinedAt: number;
+
+  constructor(
+    playerId: PlayerId,
+    socketId: string,
+    username: string,
+    seatNumber: number,
+    startingStack: number
+  ) {
+    this.playerId = playerId;
+    this.socketId = socketId;
+    this.username = username;
+    this.seatNumber = seatNumber;
+    this.stack = startingStack;
+    this.status = 'sitting-out'; // Phase 1: Players start as sitting-out
+    this.isConnected = true;
+    this.joinedAt = Date.now();
+  }
+
+  /**
+   * Update socket connection
+   */
+  public updateSocketId(socketId: string): void {
+    this.socketId = socketId;
+    this.isConnected = true;
+  }
+
+  /**
+   * Mark as disconnected
+   */
+  public markDisconnected(): void {
+    this.isConnected = false;
+    // Phase 1: Don't change status on disconnect
+    // Phase 5+: May preserve status if chips in play
+  }
+
+  /**
+   * Mark as reconnected
+   */
+  public markReconnected(socketId: string): void {
+    this.socketId = socketId;
+    this.isConnected = true;
+  }
+
+  /**
+   * Convert to plain object for serialization
+   */
+  public toJSON(): Player {
+    return {
+      playerId: this.playerId,
+      socketId: this.socketId,
+      username: this.username,
+      seatNumber: this.seatNumber,
+      stack: this.stack,
+      status: this.status,
+      isConnected: this.isConnected,
+      joinedAt: this.joinedAt,
+    };
+  }
 }
 

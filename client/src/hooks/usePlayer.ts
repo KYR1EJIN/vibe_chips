@@ -1,11 +1,24 @@
 /**
- * Current player context hook
- * Placeholder - will be implemented in Phase 1+
+ * Current player hook
+ * Phase 1: Get current player from room state
  */
 
-// Placeholder - will be fully implemented in Phase 1+
-export function usePlayer() {
-  // Hook implementation will be added in Phase 1+
-  return null;
-}
+import { useSocket } from './useSocket';
+import { useRoomState } from './useRoomState';
+import { Player } from '@vibe-chips/shared';
 
+export function usePlayer(): Player | null {
+  const socket = useSocket();
+  const room = useRoomState();
+
+  if (!room) {
+    return null;
+  }
+
+  // Convert players Map/Record to array and find player by socketId
+  const players = room.players instanceof Map
+    ? Array.from(room.players.values())
+    : Object.values(room.players);
+
+  return players.find((p) => p.socketId === socket.id) || null;
+}

@@ -1,11 +1,11 @@
 /**
  * Seat types
- * Placeholder types - will be implemented in Phase 1
+ * Phase 1: Seat occupancy tracking
  */
 
-// Placeholder - will be fully defined in Phase 1
 export interface Seat {
-  seatNumber: number;
-  // Additional fields will be added in Phase 1
+  seatNumber: number; // Position at table (1-10)
+  isOccupied: boolean; // Whether seat has a player
+  playerId: string | null; // Assigned player ID, or null if empty
 }
 

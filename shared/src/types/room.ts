@@ -1,14 +1,28 @@
 /**
  * Room types
- * Placeholder types - will be implemented in Phase 1
+ * Phase 1: Room creation, joining, and seating
  */
 
-// Placeholder - will be fully defined in Phase 1
 export type RoomId = string;
 
-// Placeholder - will be fully defined in Phase 1
-export interface Room {
+export type PlayerStatus = 'active' | 'folded' | 'all-in' | 'sitting-out' | 'disconnected';
+
+export interface RoomConfig {
+  smallBlind: number;
+  bigBlind: number;
+  maxSeats: number;
+}
+
+/**
+ * Room state interface
+ * Phase 1: Basic room state with seats and players
+ */
+export interface RoomState {
   roomId: RoomId;
-  // Additional fields will be added in Phase 1
+  ownerId: string; // Socket ID of room creator
+  createdAt: number;
+  config: RoomConfig;
+  seats: Seat[];
+  players: Map<string, Player> | Record<string, Player>; // playerId -> Player
 }
 

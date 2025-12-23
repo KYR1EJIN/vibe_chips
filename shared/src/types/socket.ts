@@ -1,12 +1,81 @@
 /**
  * Socket.io event types
- * Placeholder types - will be implemented in Phase 1+
+ * Phase 1: Room creation, joining, and seating events
  */
 
-// Placeholder - will be fully defined in Phase 1+
-// These will define the client-server event contracts
+import { RoomState, RoomId } from './room';
+import { Player, PlayerId } from './player';
 
-export interface SocketEvent {
-  // Event structure will be defined in Phase 1+
+// ============================================================================
+// Client → Server Events
+// ============================================================================
+
+export interface CreateRoomPayload {
+  // No payload needed, room ID generated server-side
+}
+
+export interface JoinRoomPayload {
+  roomId: RoomId;
+  playerId?: PlayerId; // Optional: for reconnection
+}
+
+export interface TakeSeatPayload {
+  seatNumber: number; // 1-10
+  username: string; // Must be unique per room
+  startingStack: number; // Must be > 0
+}
+
+export interface LeaveSeatPayload {
+  // No payload needed, playerId from socket connection
+}
+
+export interface OwnerUpdateConfigPayload {
+  smallBlind?: number;
+  bigBlind?: number;
+  maxSeats?: number;
+}
+
+// ============================================================================
+// Server → Client Events
+// ============================================================================
+
+export interface RoomStatePayload {
+  room: RoomState;
+}
+
+export interface ActionAckPayload {
+  success: boolean;
+  eventId?: string; // If successful, the event ID created
+  error?: {
+    code: string;
+    message: string;
+  };
+}
+
+export interface RoomCreatedPayload {
+  roomId: RoomId;
+}
+
+export interface PlayerJoinedPayload {
+  player: Player;
+  seatNumber: number;
+}
+
+export interface PlayerLeftPayload {
+  playerId: PlayerId;
+  seatNumber: number;
+  reason: 'voluntary' | 'disconnected' | 'kicked';
+}
+
+export interface ConnectedPayload {
+  socketId: string;
+  roomId?: RoomId; // If reconnecting to existing room
+  playerId?: PlayerId; // If reconnecting as existing player
+}
+
+export interface ErrorPayload {
+  code: string; // e.g., "NOT_YOUR_TURN", "INVALID_AMOUNT", "OWNER_ONLY"
+  message: string;
+  eventType?: string; // The event that caused the error
 }
 

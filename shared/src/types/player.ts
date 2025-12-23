@@ -1,14 +1,24 @@
 /**
  * Player types
- * Placeholder types - will be implemented in Phase 1
+ * Phase 1: Basic player state for seating
  */
 
-// Placeholder - will be fully defined in Phase 1
+import { PlayerStatus } from './room';
+
 export type PlayerId = string;
 
-// Placeholder - will be fully defined in Phase 1
+/**
+ * Player interface
+ * Phase 1: Basic player fields for seating
+ */
 export interface Player {
   playerId: PlayerId;
-  // Additional fields will be added in Phase 1
+  socketId: string; // Current socket connection ID
+  username: string; // Display name (unique per room)
+  seatNumber: number; // Seat position (1-10)
+  stack: number; // Current chip count
+  status: PlayerStatus; // active | folded | all-in | sitting-out | disconnected
+  isConnected: boolean; // Whether socket is currently connected
+  joinedAt: number; // Timestamp when player took seat
 }
 

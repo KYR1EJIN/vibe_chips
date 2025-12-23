@@ -1,11 +1,18 @@
 /**
- * Owner permissions check hook
- * Placeholder - will be implemented in Phase 1+
+ * Owner permissions hook
+ * Phase 1: Check if current user is room owner
  */
 
-// Placeholder - will be fully implemented in Phase 1+
-export function useOwner() {
-  // Hook implementation will be added in Phase 1+
-  return null;
-}
+import { useSocket } from './useSocket';
+import { useRoomState } from './useRoomState';
 
+export function useOwner(): boolean {
+  const socket = useSocket();
+  const room = useRoomState();
+
+  if (!room) {
+    return false;
+  }
+
+  return room.ownerId === socket.id;
+}

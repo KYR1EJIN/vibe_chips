@@ -1,10 +1,13 @@
 /**
  * Table configuration constants
- * Placeholder - will be implemented in Phase 1+
+ * Phase 1: Basic table configuration
  */
 
-// Placeholder constants - will be fully defined in Phase 1+
-export const tableConstants = {
-  // Constants will be added in Phase 1+
-};
+export const MAX_SEATS = 10;
+export const MIN_SEATS = 2;
+
+export const DEFAULT_SMALL_BLIND = 5;
+export const DEFAULT_BIG_BLIND = 10;
+
+export const MIN_STARTING_STACK = 1;
 
