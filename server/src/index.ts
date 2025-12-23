@@ -21,19 +21,22 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Serve static files from client build in production
-if (process.env.NODE_ENV === 'production') {
-  // Railway runs from project root, so client/dist is relative to project root
-  const clientDistPath = path.join(process.cwd(), 'client', 'dist');
-  
-  app.use(express.static(clientDistPath));
-  
-  // Serve index.html for all non-API routes (SPA routing)
-  // This must be last to catch all other routes
-  app.get('*', (_req, res) => {
-    res.sendFile(path.join(clientDistPath, 'index.html'));
-  });
-}
+/* ------------------ STATIC CLIENT ------------------ */
+
+// IMPORTANT: resolve path correctly for Railway monorepo layout
+// When compiled, server runs from server/dist/index.js
+// So we need to go up two levels to reach project root, then into client/dist
+const clientDistPath = path.resolve(__dirname, '../../client/dist');
+
+// Serve static assets
+app.use(express.static(clientDistPath));
+
+// SPA fallback (React Router support) - must be last
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(clientDistPath, 'index.html'));
+});
+
+/* -------------------------------------------------- */
 
 // Initialize Socket.io
 // Support multiple origins for production (client and server may be on different domains)

@@ -4,31 +4,41 @@
 
 When Railway auto-detects your client service, you need to configure it correctly:
 
-### Step 1: Set Root Directory
+### Step 1: Configure Config-as-Code (If Using)
+
+1. Go to client service → **Settings** → **Config-as-code**
+2. **Railway Config File**: Set to `client/railway.json`
+   - This tells Railway to use the config file in the client directory
+   - If this field is empty or shows a different path, Railway might not find the config
+
+### Step 2: Set Root Directory (CRITICAL)
 
 1. Go to client service → **Settings** → **Service**
 2. **Root Directory**: Set to `client` (not empty!)
-3. This tells Railway to run commands from the `client/` directory
+   - This tells Railway to run commands from the `client/` directory
+   - **This is the most important setting!** Without this, Railway can't find `server.js` or `package.json`
 
-### Step 2: Verify Build Command
+### Step 3: Verify Build Command
 
 1. Go to **Settings** → **Service**
 2. **Build Command**: Should be `npm install && npm run build`
+   - If using config-as-code, this comes from `client/railway.json`
+   - Otherwise, set it manually here
 3. This builds the static files to `client/dist/`
 
-### Step 3: Verify Start Command
+### Step 4: Verify Start Command
 
 1. Go to **Settings** → **Service**
 2. **Start Command**: Should be `npm run start`
 3. This runs `node server.js` which serves the static files
 
-### Step 4: Check Environment Variables
+### Step 5: Check Environment Variables
 
 1. Go to **Variables** tab
 2. Ensure `VITE_SERVER_URL` is set to your server URL
 3. Example: `https://vibe-chipsserver-production.up.railway.app`
 
-### Step 5: Verify Deployment
+### Step 6: Verify Deployment
 
 1. Go to **Deployments** tab
 2. Check the latest deployment logs

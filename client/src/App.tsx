@@ -19,8 +19,10 @@ function App() {
 
   useEffect(() => {
     // Initialize Socket.io connection
-    // Use environment variable for server URL, fallback to localhost for development
-    const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
+    // In production (served from same server), use current origin
+    // In development or if VITE_SERVER_URL is set, use that
+    const serverUrl = import.meta.env.VITE_SERVER_URL || 
+      (import.meta.env.PROD ? window.location.origin : 'http://localhost:3000');
     const newSocket = io(serverUrl, {
       transports: ['websocket', 'polling'],
     });
