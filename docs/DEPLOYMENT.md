@@ -56,6 +56,27 @@ Before deploying, ensure you have:
 
 ### Step 4: Configure Environment Variables
 
+**If you have separate client and server services:**
+
+1. **For the Server Service:**
+   - Go to the server service → **"Variables"** tab
+   - Add:
+     ```
+     NODE_ENV=production
+     CORS_ORIGIN=https://vibe-chipsclient-production.up.railway.app
+     ```
+     (Replace with your actual client URL)
+
+2. **For the Client Service:**
+   - Go to the client service → **"Variables"** tab
+   - Add:
+     ```
+     VITE_SERVER_URL=https://your-server-name.up.railway.app
+     ```
+     (Replace with your actual server URL - get this from the server service's Networking tab)
+
+**If you have a single service (recommended):**
+
 1. In your Railway project, go to the **"Variables"** tab
 2. Add the following environment variables:
 
