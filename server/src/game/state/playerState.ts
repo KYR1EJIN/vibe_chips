@@ -16,6 +16,7 @@ export class PlayerState implements Player {
   public readonly username: string;
   public seatNumber: number;
   public stack: number;
+  public currentBet: number; // Phase 2: Bet amount in current betting round
   public status: PlayerStatus;
   public isConnected: boolean;
   public readonly joinedAt: number;
@@ -32,6 +33,7 @@ export class PlayerState implements Player {
     this.username = username;
     this.seatNumber = seatNumber;
     this.stack = startingStack;
+    this.currentBet = 0; // Phase 2: Initialize currentBet to 0
     this.status = 'sitting-out'; // Phase 1: Players start as sitting-out
     this.isConnected = true;
     this.joinedAt = Date.now();
@@ -63,6 +65,14 @@ export class PlayerState implements Player {
   }
 
   /**
+   * Reset currentBet for new betting round
+   * Phase 2: Reset bet at start of each betting round
+   */
+  public resetCurrentBet(): void {
+    this.currentBet = 0;
+  }
+
+  /**
    * Convert to plain object for serialization
    */
   public toJSON(): Player {
@@ -72,6 +82,7 @@ export class PlayerState implements Player {
       username: this.username,
       seatNumber: this.seatNumber,
       stack: this.stack,
+      currentBet: this.currentBet,
       status: this.status,
       isConnected: this.isConnected,
       joinedAt: this.joinedAt,

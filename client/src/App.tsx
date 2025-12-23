@@ -19,7 +19,9 @@ function App() {
 
   useEffect(() => {
     // Initialize Socket.io connection
-    const newSocket = io('http://localhost:3000', {
+    // Use environment variable for server URL, fallback to localhost for development
+    const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
+    const newSocket = io(serverUrl, {
       transports: ['websocket', 'polling'],
     });
 

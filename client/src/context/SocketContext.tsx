@@ -8,11 +8,8 @@ import { Socket } from 'socket.io-client';
 
 export const SocketContext = createContext<Socket | null>(null);
 
-export function useSocketContext(): Socket {
+export function useSocketContext(): Socket | null {
   const socket = useContext(SocketContext);
-  if (!socket) {
-    throw new Error('useSocketContext must be used within SocketProvider');
-  }
   return socket;
 }
 

@@ -9,7 +9,7 @@ export type PlayerId = string;
 
 /**
  * Player interface
- * Phase 1: Basic player fields for seating
+ * Phase 2: Added currentBet for betting engine
  */
 export interface Player {
   playerId: PlayerId;
@@ -17,6 +17,7 @@ export interface Player {
   username: string; // Display name (unique per room)
   seatNumber: number; // Seat position (1-10)
   stack: number; // Current chip count
+  currentBet: number; // Bet amount in current betting round (Phase 2)
   status: PlayerStatus; // active | folded | all-in | sitting-out | disconnected
   isConnected: boolean; // Whether socket is currently connected
   joinedAt: number; // Timestamp when player took seat

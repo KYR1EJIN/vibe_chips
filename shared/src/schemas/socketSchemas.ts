@@ -48,11 +48,22 @@ export const ownerUpdateConfigSchema = z.object({
     .optional(),
 });
 
+export const ownerStartHandSchema = z.object({
+  // No payload needed
+});
+
+export const playerActionSchema = z.object({
+  action: z.enum(['bet', 'call', 'raise', 'check', 'fold', 'all-in']),
+  amount: z.number().int().nonnegative().optional(),
+});
+
 export const socketSchemas = {
   create_room: createRoomSchema,
   join_room: joinRoomSchema,
   take_seat: takeSeatSchema,
   leave_seat: leaveSeatSchema,
   owner_update_config: ownerUpdateConfigSchema,
+  owner_start_hand: ownerStartHandSchema,
+  player_action: playerActionSchema,
 };
 

@@ -9,10 +9,12 @@ import {
   RoomConfig,
   Seat,
   Player,
+  Hand,
   MAX_SEATS,
   DEFAULT_SMALL_BLIND,
   DEFAULT_BIG_BLIND,
 } from '@vibe-chips/shared';
+import { PlayerState } from './playerState';
 
 /**
  * RoomState class
@@ -25,7 +27,8 @@ export class RoomState implements IRoomState {
   public readonly createdAt: number;
   public config: RoomConfig;
   public seats: Seat[];
-  public players: Map<string, Player>;
+  public players: Map<string, PlayerState>;
+  public currentHand: Hand | null; // Phase 2: Active hand, or null if in lobby
 
   constructor(roomId: RoomId, ownerId: string) {
     this.roomId = roomId;
@@ -36,8 +39,9 @@ export class RoomState implements IRoomState {
       bigBlind: DEFAULT_BIG_BLIND,
       maxSeats: MAX_SEATS,
     };
-    this.players = new Map<string, Player>();
+    this.players = new Map<string, PlayerState>();
     this.seats = this._initializeSeats();
+    this.currentHand = null; // Phase 2: Initialize to null (lobby state)
   }
 
   /**
@@ -77,14 +81,14 @@ export class RoomState implements IRoomState {
   /**
    * Get player by ID
    */
-  public getPlayer(playerId: string): Player | undefined {
+  public getPlayer(playerId: string): PlayerState | undefined {
     return this.players.get(playerId);
   }
 
   /**
    * Get player by socket ID
    */
-  public getPlayerBySocketId(socketId: string): Player | undefined {
+  public getPlayerBySocketId(socketId: string): PlayerState | undefined {
     for (const player of this.players.values()) {
       if (player.socketId === socketId) {
         return player;
@@ -97,7 +101,7 @@ export class RoomState implements IRoomState {
    * Add player to room
    * Phase 1: Basic player addition
    */
-  public addPlayer(player: Player): void {
+  public addPlayer(player: PlayerState): void {
     this.players.set(player.playerId, player);
     const seat = this.getSeat(player.seatNumber);
     if (seat) {
@@ -154,7 +158,10 @@ export class RoomState implements IRoomState {
       createdAt: this.createdAt,
       config: { ...this.config },
       seats: [...this.seats],
-      players: Object.fromEntries(this.players),
+      players: Object.fromEntries(
+        Array.from(this.players.entries()).map(([id, player]) => [id, player.toJSON()])
+      ),
+      currentHand: this.currentHand,
     };
   }
 }

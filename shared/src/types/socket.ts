@@ -5,6 +5,7 @@
 
 import { RoomState, RoomId } from './room';
 import { Player, PlayerId } from './player';
+import { ActionType } from './action';
 
 // ============================================================================
 // Client → Server Events
@@ -33,6 +34,15 @@ export interface OwnerUpdateConfigPayload {
   smallBlind?: number;
   bigBlind?: number;
   maxSeats?: number;
+}
+
+export interface OwnerStartHandPayload {
+  // No payload needed, uses current room state
+}
+
+export interface PlayerActionPayload {
+  action: ActionType;
+  amount?: number; // Required for bet/raise, optional for all-in
 }
 
 // ============================================================================
@@ -77,5 +87,12 @@ export interface ErrorPayload {
   code: string; // e.g., "NOT_YOUR_TURN", "INVALID_AMOUNT", "OWNER_ONLY"
   message: string;
   eventType?: string; // The event that caused the error
+}
+
+export interface HandStartedPayload {
+  handId: string;
+  dealerButtonSeat: number;
+  smallBlindSeat: number;
+  bigBlindSeat: number;
 }
 

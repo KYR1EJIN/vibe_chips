@@ -13,9 +13,13 @@ export interface RoomConfig {
   maxSeats: number;
 }
 
+import { Hand } from './hand';
+import { Seat } from './seat';
+import { Player } from './player';
+
 /**
  * Room state interface
- * Phase 1: Basic room state with seats and players
+ * Phase 2: Added currentHand for betting engine
  */
 export interface RoomState {
   roomId: RoomId;
@@ -24,5 +28,6 @@ export interface RoomState {
   config: RoomConfig;
   seats: Seat[];
   players: Map<string, Player> | Record<string, Player>; // playerId -> Player
+  currentHand: Hand | null; // Active hand, or null if in lobby (Phase 2)
 }
 

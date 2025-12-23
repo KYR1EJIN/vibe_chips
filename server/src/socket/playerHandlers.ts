@@ -7,10 +7,16 @@ import { Socket, Server } from 'socket.io';
 import { stateManager } from '../game/state/stateManager';
 import { PlayerState } from '../game/state/playerState';
 import { generatePlayerId } from '../utils/idGenerator';
+import { ActionValidator } from '../game/betting/actionValidator';
+import { ActionProcessor } from '../game/betting/actionProcessor';
+import { TurnOrderManager } from '../game/betting/turnOrderManager';
+import { BettingRoundState } from '../game/state/bettingRoundState';
+import { HandState } from '../game/state/handState';
 import {
   socketSchemas,
   TakeSeatPayload,
   LeaveSeatPayload,
+  PlayerActionPayload,
   ActionAckPayload,
   ErrorPayload,
   PlayerJoinedPayload,
@@ -319,6 +325,181 @@ export function setupPlayerHandlers(socket: Socket, io: Server): void {
         code: 'VALIDATION_ERROR',
         message: error.message || 'Invalid request',
         eventType: 'leave_seat',
+      };
+      socket.emit('error', errorPayload);
+      socket.emit('action_ack', {
+        success: false,
+        error: {
+          code: errorPayload.code,
+          message: errorPayload.message,
+        },
+      });
+    }
+  });
+
+  /**
+   * player_action: Player performs a betting action
+   * Phase 2: Bet, call, raise, check, fold, all-in
+   */
+  socket.on('player_action', (payload: PlayerActionPayload) => {
+    try {
+      // Validate payload
+      socketSchemas.player_action.parse(payload);
+
+      const { action, amount } = payload;
+
+      // Get connection info
+      const connection = stateManager.getConnection(socket.id);
+      if (!connection || !connection.roomId) {
+        const errorPayload: ErrorPayload = {
+          code: 'NOT_IN_ROOM',
+          message: 'You must join a room first',
+          eventType: 'player_action',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      const room = stateManager.getRoom(connection.roomId);
+      if (!room) {
+        const errorPayload: ErrorPayload = {
+          code: 'ROOM_NOT_FOUND',
+          message: 'Room not found',
+          eventType: 'player_action',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      // Find player by socket ID
+      const player = room.getPlayerBySocketId(socket.id);
+      if (!player) {
+        const errorPayload: ErrorPayload = {
+          code: 'NOT_SEATED',
+          message: 'You must be seated to act',
+          eventType: 'player_action',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      // Check if hand is active
+      if (!room.currentHand) {
+        const errorPayload: ErrorPayload = {
+          code: 'NO_ACTIVE_HAND',
+          message: 'No active hand',
+          eventType: 'player_action',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      // Check if betting round is active
+      if (!room.currentHand.currentBettingRound) {
+        const errorPayload: ErrorPayload = {
+          code: 'NO_ACTIVE_BETTING_ROUND',
+          message: 'No active betting round',
+          eventType: 'player_action',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      // Type assertion: HandState.currentBettingRound is actually BettingRoundState
+      // We already checked for null above, so this is safe
+      const bettingRound = (room.currentHand as HandState).currentBettingRound!;
+
+      // Validate action
+      const validation = ActionValidator.validateAction(
+        player,
+        action,
+        amount,
+        room,
+        bettingRound
+      );
+
+      if (!validation.valid) {
+        const errorPayload: ErrorPayload = {
+          code: 'INVALID_ACTION',
+          message: validation.error || 'Invalid action',
+          eventType: 'player_action',
+        };
+        socket.emit('error', errorPayload);
+        socket.emit('action_ack', {
+          success: false,
+          error: {
+            code: errorPayload.code,
+            message: errorPayload.message,
+          },
+        });
+        return;
+      }
+
+      // Process action
+      const actionRecord = ActionProcessor.processAction(
+        player,
+        action,
+        amount,
+        room,
+        bettingRound
+      );
+
+      // Update turn order
+      TurnOrderManager.updateActionSeat(room, bettingRound);
+
+      // Send success ack
+      const ack: ActionAckPayload = {
+        success: true,
+        eventId: actionRecord.actionId,
+      };
+      socket.emit('action_ack', ack);
+
+      // Broadcast room state to all clients
+      broadcastRoomState(io, connection.roomId, room);
+
+      console.log(
+        `✅ Player ${player.username} (${player.playerId}) ${action} in room ${connection.roomId}`
+      );
+    } catch (error: any) {
+      const errorPayload: ErrorPayload = {
+        code: 'VALIDATION_ERROR',
+        message: error.message || 'Invalid request',
+        eventType: 'player_action',
       };
       socket.emit('error', errorPayload);
       socket.emit('action_ack', {

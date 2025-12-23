@@ -12,14 +12,17 @@ import { SeatComponent } from '../components/table/Seat';
 import { SeatModal } from '../components/modals/SeatModal';
 import { RoomLink } from '../components/room/RoomLink';
 import { RoomConfig } from '../components/room/RoomConfig';
-import { Seat, Player } from '@vibe-chips/shared';
+import { HandStatus } from '../components/betting/HandStatus';
+import { BettingControls } from '../components/betting/BettingControls';
+import { BettingInfo } from '../components/betting/BettingInfo';
+import { Player, ActionType } from '@vibe-chips/shared';
 
 interface RoomPageProps {
   roomId: string | null;
   onBack: () => void;
 }
 
-function RoomPage({ roomId, onBack }: RoomPageProps) {
+function RoomPage({ onBack }: RoomPageProps) {
   const socket = useSocket();
   const room = useRoomState();
   const isOwner = useOwner();
@@ -56,6 +59,16 @@ function RoomPage({ roomId, onBack }: RoomPageProps) {
   const handleLeaveSeat = () => {
     if (!socket || !currentPlayer) return;
     socket.emit('leave_seat', {});
+  };
+
+  const handleStartHand = () => {
+    if (!socket) return;
+    socket.emit('owner_start_hand', {});
+  };
+
+  const handlePlayerAction = (action: ActionType, amount?: number) => {
+    if (!socket) return;
+    socket.emit('player_action', { action, amount });
   };
 
   // Get player for each seat
@@ -121,6 +134,34 @@ function RoomPage({ roomId, onBack }: RoomPageProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <RoomLink roomId={room.roomId} />
             <RoomConfig />
+            {!room.currentHand && (
+              <div className="md:col-span-2">
+                <button
+                  onClick={handleStartHand}
+                  className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold text-lg"
+                >
+                  Start Hand
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Hand Status */}
+        {room.currentHand && (
+          <HandStatus hand={room.currentHand} />
+        )}
+
+        {/* Betting Controls & Info for Current Player */}
+        {currentPlayer && room.currentHand && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <BettingInfo player={currentPlayer} hand={room.currentHand} />
+            <BettingControls
+              player={currentPlayer}
+              hand={room.currentHand}
+              bigBlind={room.config.bigBlind}
+              onAction={handlePlayerAction}
+            />
           </div>
         )}
       </div>
@@ -146,6 +187,7 @@ function RoomPage({ roomId, onBack }: RoomPageProps) {
                 <SeatComponent
                   seat={seatData}
                   player={player}
+                  hand={room.currentHand}
                   isOwner={player?.socketId === room.ownerId}
                   isCurrentPlayer={player?.socketId === currentPlayer?.socketId}
                   onClick={() => handleSeatClick(seat)}
@@ -156,9 +198,22 @@ function RoomPage({ roomId, onBack }: RoomPageProps) {
 
           {/* Center area (for future: pot display, community cards) */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-            <div className="text-white text-sm opacity-50">
-              Waiting for players...
-            </div>
+            {room.currentHand ? (
+              <div className="text-white">
+                <div className="text-lg font-semibold">
+                  {room.currentHand.phase.toUpperCase()}
+                </div>
+                {room.currentHand.currentBettingRound && (
+                  <div className="text-sm opacity-75">
+                    Highest Bet: {room.currentHand.currentBettingRound.highestBet}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-white text-sm opacity-50">
+                Waiting for players...
+              </div>
+            )}
           </div>
         </div>
       </div>
