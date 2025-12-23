@@ -98,6 +98,18 @@ export class RoomState implements IRoomState {
   }
 
   /**
+   * Get player by seat number
+   * Phase 2: Helper for blind posting
+   */
+  public getPlayerBySeatNumber(seatNumber: number): PlayerState | undefined {
+    const seat = this.getSeat(seatNumber);
+    if (!seat || !seat.playerId) {
+      return undefined;
+    }
+    return this.getPlayer(seat.playerId);
+  }
+
+  /**
    * Add player to room
    * Phase 1: Basic player addition
    */

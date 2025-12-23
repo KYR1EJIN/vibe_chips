@@ -54,7 +54,7 @@ function App() {
     newSocket.on('room_created', (data: { roomId: string }) => {
       console.log('Room created:', data.roomId);
       setRoomId(data.roomId);
-      setCurrentPage('room');
+      // Don't switch to room page yet - wait for room_state event
       // Update URL without reload
       window.history.pushState({}, '', `?room=${data.roomId}`);
     });
@@ -65,6 +65,7 @@ function App() {
       setRoomState(data.room);
       if (data.room.roomId) {
         setRoomId(data.room.roomId);
+        // Switch to room page when we have the room state
         setCurrentPage('room');
       }
     });

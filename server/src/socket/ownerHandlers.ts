@@ -255,7 +255,7 @@ export function setupOwnerHandlers(socket: Socket, io: Server): void {
         return;
       }
 
-      // Phase 2: Simple hand initialization (no automatic blinds posting yet)
+      // Phase 2: Simple hand initialization with blind posting
       // For now, assign dealer button to first seated player
       // In Phase 4, this will rotate properly
       const firstPlayer = seatedPlayers[0];
@@ -271,7 +271,37 @@ export function setupOwnerHandlers(socket: Socket, io: Server): void {
       // First action seat is left of big blind
       const firstActionSeat = getNextSeat(bigBlindSeat);
 
-      // Create hand state
+      // Set all seated players to active status and reset currentBet
+      for (const player of seatedPlayers) {
+        player.status = 'active';
+        player.resetCurrentBet();
+      }
+
+      // Post blinds: Small blind and big blind
+      const smallBlindPlayer = room.getPlayerBySeatNumber(smallBlindSeat);
+      const bigBlindPlayer = room.getPlayerBySeatNumber(bigBlindSeat);
+
+      if (smallBlindPlayer) {
+        const smallBlindAmount = Math.min(smallBlindPlayer.stack, room.config.smallBlind);
+        smallBlindPlayer.stack -= smallBlindAmount;
+        smallBlindPlayer.currentBet = smallBlindAmount;
+        // If player went all-in for small blind, mark as all-in
+        if (smallBlindPlayer.stack === 0 && smallBlindAmount > 0) {
+          smallBlindPlayer.status = 'all-in';
+        }
+      }
+
+      if (bigBlindPlayer) {
+        const bigBlindAmount = Math.min(bigBlindPlayer.stack, room.config.bigBlind);
+        bigBlindPlayer.stack -= bigBlindAmount;
+        bigBlindPlayer.currentBet = bigBlindAmount;
+        // If player went all-in for big blind, mark as all-in
+        if (bigBlindPlayer.stack === 0 && bigBlindAmount > 0) {
+          bigBlindPlayer.status = 'all-in';
+        }
+      }
+
+      // Create hand state (after blinds posted)
       const hand = new HandState(
         dealerButtonSeat,
         smallBlindSeat,
@@ -279,12 +309,6 @@ export function setupOwnerHandlers(socket: Socket, io: Server): void {
         firstActionSeat,
         room.config.bigBlind
       );
-
-      // Set all seated players to active status and reset currentBet
-      for (const player of seatedPlayers) {
-        player.status = 'active';
-        player.resetCurrentBet();
-      }
 
       // Assign hand to room
       room.currentHand = hand;

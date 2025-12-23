@@ -3,9 +3,9 @@
  * Phase 1: Poker table visualization with seats
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useSocket } from '../hooks/useSocket';
-import { useRoomState } from '../hooks/useRoomState';
+import { RoomContext } from '../context/RoomContext';
 import { useOwner } from '../hooks/useOwner';
 import { usePlayer } from '../hooks/usePlayer';
 import { SeatComponent } from '../components/table/Seat';
@@ -24,10 +24,18 @@ interface RoomPageProps {
 
 function RoomPage({ onBack }: RoomPageProps) {
   const socket = useSocket();
-  const room = useRoomState();
+  const room = useContext(RoomContext);
   const isOwner = useOwner();
   const currentPlayer = usePlayer();
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
+  
+  // If we have a roomId but no room state yet, request it
+  useEffect(() => {
+    if (socket && roomId && !room) {
+      console.log('RoomPage: Requesting room state for:', roomId);
+      socket.emit('join_room', { roomId });
+    }
+  }, [socket, roomId, room]);
 
   if (!room) {
     return (
