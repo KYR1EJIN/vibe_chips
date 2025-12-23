@@ -36,6 +36,22 @@ export function BettingControls({
   const minimumRaise = bettingRound.minimumRaise;
   const minimumBet = bigBlind;
 
+  // Debug logging
+  if (isPlayerTurn) {
+    console.log('BettingControls - Player turn:', {
+      playerSeat: player.seatNumber,
+      actionSeat: bettingRound.actionSeat,
+      highestBet: bettingRound.highestBet,
+      currentBet: player.currentBet,
+      amountToCall,
+      canCheck,
+      canCall,
+      canBet,
+      canRaise,
+      stack: player.stack,
+    });
+  }
+
   const handleBet = () => {
     const amount = parseInt(betAmount, 10);
     if (amount >= minimumBet && amount <= player.stack) {
@@ -79,6 +95,9 @@ export function BettingControls({
         <p className="text-center text-sm">
           Waiting for your turn...
         </p>
+        <p className="text-center text-xs text-gray-400 mt-2">
+          Action on seat {bettingRound.actionSeat}, you are seat {player.seatNumber}
+        </p>
       </div>
     );
   }
@@ -95,7 +114,7 @@ export function BettingControls({
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        {/* Check/Call */}
+        {/* Check/Call - Always show one of these if it's player's turn */}
         {canCheck ? (
           <button
             onClick={handleCheck}
@@ -110,9 +129,16 @@ export function BettingControls({
           >
             Call {amountToCall}
           </button>
-        ) : null}
+        ) : (
+          <button
+            disabled
+            className="bg-gray-600 px-4 py-2 rounded font-semibold opacity-50 cursor-not-allowed"
+          >
+            {amountToCall > player.stack ? `Need ${amountToCall}` : 'Cannot Call'}
+          </button>
+        )}
 
-        {/* Fold */}
+        {/* Fold - Always available */}
         <button
           onClick={handleFold}
           className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-semibold"
@@ -120,11 +146,11 @@ export function BettingControls({
           Fold
         </button>
 
-        {/* All-In */}
+        {/* All-In - Always available if player has chips */}
         {player.stack > 0 && (
           <button
             onClick={handleAllIn}
-            className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded font-semibold"
+            className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded font-semibold col-span-2"
           >
             All-In ({player.stack})
           </button>

@@ -133,8 +133,13 @@ export class RoomState implements IRoomState {
       if (seat) {
         seat.isOccupied = false;
         seat.playerId = null;
+        console.log(`✅ Seat ${player.seatNumber} freed for player ${playerId}`);
+      } else {
+        console.warn(`⚠️ Seat ${player.seatNumber} not found when removing player ${playerId}`);
       }
       this.players.delete(playerId);
+    } else {
+      console.warn(`⚠️ Player ${playerId} not found when trying to remove`);
     }
   }
 

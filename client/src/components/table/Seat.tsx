@@ -26,6 +26,11 @@ export function SeatComponent({
   const isClickable = isEmpty && !player;
   const isActivePlayer =
     hand?.currentBettingRound?.actionSeat === seat.seatNumber;
+  
+  // Check for dealer button, small blind, big blind
+  const isDealerButton = hand?.dealerButtonSeat === seat.seatNumber;
+  const isSmallBlind = hand?.smallBlindSeat === seat.seatNumber;
+  const isBigBlind = hand?.bigBlindSeat === seat.seatNumber;
 
   return (
     <div
@@ -75,6 +80,27 @@ export function SeatComponent({
       <div className="absolute -top-1 -left-1 bg-gray-700 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center">
         {seat.seatNumber}
       </div>
+      
+      {/* Dealer Button */}
+      {isDealerButton && (
+        <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-white text-black text-xs px-2 py-1 rounded-full font-bold border-2 border-black">
+          D
+        </div>
+      )}
+      
+      {/* Small Blind */}
+      {isSmallBlind && (
+        <div className="absolute -right-8 top-1/2 transform -translate-y-1/2 bg-blue-500 text-white text-xs px-2 py-1 rounded font-semibold">
+          SB
+        </div>
+      )}
+      
+      {/* Big Blind */}
+      {isBigBlind && (
+        <div className="absolute -right-8 top-1/2 transform -translate-y-1/2 bg-red-500 text-white text-xs px-2 py-1 rounded font-semibold">
+          BB
+        </div>
+      )}
     </div>
   );
 }

@@ -5,7 +5,7 @@
 
 import { Socket, Server } from 'socket.io';
 import { stateManager } from '../game/state/stateManager';
-import { setupRoomHandlers } from './roomHandlers';
+import { setupRoomHandlers, broadcastRoomState } from './roomHandlers';
 import { setupPlayerHandlers } from './playerHandlers';
 import { setupOwnerHandlers } from './ownerHandlers';
 
@@ -32,15 +32,30 @@ export function connectionHandler(socket: Socket, io: Server): void {
 
     // Get connection info
     const connection = stateManager.getConnection(socket.id);
-    if (connection) {
+    if (connection && connection.roomId) {
       const room = stateManager.getRoom(connection.roomId);
       if (room && connection.playerId) {
-        // Mark player as disconnected
+        // Find player by playerId
         const player = room.getPlayer(connection.playerId);
         if (player) {
-          player.markDisconnected();
-          // Phase 1: Don't remove player on disconnect
-          // Phase 5+: May preserve state if chips in play
+          // Phase 2: Free seat on disconnect
+          // Phase 5+: May preserve seat if chips in play during active hand
+          const seatNumber = player.seatNumber;
+          
+          // Free the seat - remove player from room
+          room.removePlayer(connection.playerId);
+          
+          // Broadcast updated room state
+          broadcastRoomState(io, connection.roomId, room);
+          
+          // Broadcast player_left event
+          io.to(connection.roomId).emit('player_left', {
+            playerId: connection.playerId,
+            seatNumber,
+            reason: 'disconnected',
+          });
+          
+          console.log(`✅ Freed seat ${seatNumber} for disconnected player ${connection.playerId}`);
         }
       }
 
