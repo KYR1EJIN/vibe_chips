@@ -17,6 +17,11 @@ const app = express();
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath));
 
+// Health check endpoint
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', service: 'client', timestamp: new Date().toISOString() });
+});
+
 // Serve index.html for all routes (SPA routing)
 app.get('*', (_req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
