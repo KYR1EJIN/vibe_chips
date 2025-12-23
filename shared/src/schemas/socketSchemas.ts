@@ -12,7 +12,9 @@ export const createRoomSchema = z.object({
 });
 
 export const joinRoomSchema = z.object({
-  roomId: z.string().min(1, 'Room ID is required'),
+  roomId: z.string()
+    .min(1, 'Room ID is required')
+    .regex(/^\d{6}$/, 'Room ID must be a 6-digit number'),
   playerId: z.string().optional(),
 });
 

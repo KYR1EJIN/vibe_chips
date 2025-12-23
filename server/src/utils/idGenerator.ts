@@ -5,15 +5,14 @@
 
 /**
  * Generate a short, URL-friendly room ID
- * Format: 6-character alphanumeric string
+ * Format: 6-digit number (000000-999999)
  */
 export function generateRoomId(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
+  // Generate a random 6-digit number (000000-999999)
+  const min = 100000; // Minimum 6-digit number
+  const max = 999999; // Maximum 6-digit number
+  const roomId = Math.floor(Math.random() * (max - min + 1)) + min;
+  return roomId.toString();
 }
 
 /**

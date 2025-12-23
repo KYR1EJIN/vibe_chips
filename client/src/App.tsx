@@ -35,9 +35,10 @@ function App() {
       const urlParams = new URLSearchParams(window.location.search);
       const roomIdParam = urlParams.get('room');
       if (roomIdParam) {
+        console.log('Found room ID in URL:', roomIdParam);
         newSocket.emit('join_room', { roomId: roomIdParam });
         setRoomId(roomIdParam);
-        setCurrentPage('room');
+        // Will switch to room page when room_state is received
       }
     });
 
@@ -52,22 +53,25 @@ function App() {
 
     // Handle room_created event
     newSocket.on('room_created', (data: { roomId: string }) => {
-      console.log('Room created:', data.roomId);
+      console.log('✅ Room created event received:', data.roomId);
       setRoomId(data.roomId);
-      // Don't switch to room page yet - wait for room_state event
       // Update URL without reload
       window.history.pushState({}, '', `?room=${data.roomId}`);
+      // Don't switch to room page yet - wait for room_state event
     });
 
     // Handle room_state updates
     newSocket.on('room_state', (data: { room: RoomState }) => {
-      console.log('Room state updated:', data.room);
+      console.log('✅ Room state event received:', data.room.roomId);
       setRoomState(data.room);
       if (data.room.roomId) {
         setRoomId(data.room.roomId);
-        // Switch to room page when we have the room state
-        setCurrentPage('room');
       }
+    });
+    
+    // Handle errors
+    newSocket.on('error', (error: { code: string; message: string; eventType?: string }) => {
+      console.error('❌ Socket error:', error);
     });
 
     setSocket(newSocket);
@@ -77,12 +81,20 @@ function App() {
     };
   }, []);
 
+  // Switch to room page when we have both roomId and roomState
+  useEffect(() => {
+    if (roomState && roomId && currentPage !== 'room') {
+      console.log('Switching to room page:', roomId);
+      setCurrentPage('room');
+    }
+  }, [roomState, roomId, currentPage]);
+
   // Handle navigation
   const handleJoinRoom = (id: string) => {
     if (socket) {
       socket.emit('join_room', { roomId: id });
       setRoomId(id);
-      setCurrentPage('room');
+      // Will switch to room page when room_state is received
     }
   };
 

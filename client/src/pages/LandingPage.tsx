@@ -69,10 +69,16 @@ function LandingPage({ onJoinRoom }: LandingPageProps) {
               <input
                 type="text"
                 value={joinRoomId}
-                onChange={(e) => setJoinRoomId(e.target.value.toUpperCase())}
-                placeholder="Enter Room ID"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+                onChange={(e) => {
+                  // Only allow digits, max 6 characters
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                  setJoinRoomId(value);
+                }}
+                placeholder="Enter 6-Digit Room ID"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-2xl font-mono tracking-widest"
                 maxLength={6}
+                inputMode="numeric"
+                pattern="[0-9]{6}"
               />
               <button
                 type="submit"

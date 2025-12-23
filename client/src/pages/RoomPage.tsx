@@ -22,7 +22,7 @@ interface RoomPageProps {
   onBack: () => void;
 }
 
-function RoomPage({ onBack }: RoomPageProps) {
+function RoomPage({ roomId, onBack }: RoomPageProps) {
   const socket = useSocket();
   const room = useContext(RoomContext);
   const isOwner = useOwner();
@@ -32,8 +32,10 @@ function RoomPage({ onBack }: RoomPageProps) {
   // If we have a roomId but no room state yet, request it
   useEffect(() => {
     if (socket && roomId && !room) {
-      console.log('RoomPage: Requesting room state for:', roomId);
+      console.log('RoomPage: No room state, requesting for roomId:', roomId);
       socket.emit('join_room', { roomId });
+    } else if (room) {
+      console.log('RoomPage: Room state available:', room.roomId);
     }
   }, [socket, roomId, room]);
 
@@ -109,7 +111,9 @@ function RoomPage({ onBack }: RoomPageProps) {
       <div className="max-w-6xl mx-auto mb-6 space-y-4">
         <div className="flex justify-between items-center bg-white rounded-lg p-4 shadow-md">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Room: {room.roomId}</h1>
+            <h1 className="text-2xl font-bold text-gray-800">
+              Room: <span className="font-mono tracking-widest">{room.roomId}</span>
+            </h1>
             <p className="text-sm text-gray-600">
               Blinds: {room.config.smallBlind} / {room.config.bigBlind}
             </p>

@@ -23,6 +23,10 @@ export function RoomLink({ roomId }: RoomLinkProps) {
   return (
     <div className="bg-white rounded-lg p-4 shadow-md">
       <h3 className="text-sm font-semibold text-gray-700 mb-2">Room Link</h3>
+      <div className="mb-2">
+        <p className="text-xs text-gray-600 mb-1">Room ID:</p>
+        <p className="text-2xl font-mono font-bold tracking-widest text-gray-800">{roomId}</p>
+      </div>
       <div className="flex gap-2">
         <input
           type="text"
