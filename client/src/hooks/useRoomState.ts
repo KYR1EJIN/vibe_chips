@@ -12,14 +12,20 @@ export function useRoomState(): RoomState | null {
   const [roomState, setRoomState] = useState<RoomState | null>(null);
 
   useEffect(() => {
+    if (!socket) {
+      return;
+    }
+
     const handleRoomState = (payload: { room: RoomState }) => {
       setRoomState(payload.room);
     };
 
-    socket.on('room_state', handleRoomState);
+    // socket is guaranteed to be non-null here due to early return above
+    const currentSocket = socket;
+    currentSocket.on('room_state', handleRoomState);
 
     return () => {
-      socket.off('room_state', handleRoomState);
+      currentSocket.off('room_state', handleRoomState);
     };
   }, [socket]);
 

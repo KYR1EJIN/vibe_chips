@@ -11,7 +11,7 @@ export function usePlayer(): Player | null {
   const socket = useSocket();
   const room = useRoomState();
 
-  if (!room) {
+  if (!room || !socket) {
     return null;
   }
 
@@ -20,5 +20,6 @@ export function usePlayer(): Player | null {
     ? Array.from(room.players.values())
     : Object.values(room.players);
 
-  return players.find((p) => p.socketId === socket.id) || null;
+  // socket is guaranteed to be non-null after the check above
+  return players.find((p) => p.socketId === socket!.id) || null;
 }

@@ -10,9 +10,10 @@ export function useOwner(): boolean {
   const socket = useSocket();
   const room = useRoomState();
 
-  if (!room) {
+  if (!room || !socket) {
     return false;
   }
 
-  return room.ownerId === socket.id;
+  // socket is guaranteed to be non-null after the check above
+  return room.ownerId === socket!.id;
 }
